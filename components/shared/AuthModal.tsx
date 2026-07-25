@@ -49,18 +49,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
     }
   };
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleAuth = () => {
     setOauthLoading(true);
-    try {
-      await loginWithGoogle();
-      toast("Welcome back!", "Successfully authenticated using Google", "success");
-      onClose();
-      router.push('/dashboard');
-    } catch (err: any) {
-      toast("Google Login Failed", "Could not complete oauth flow.", "error");
-    } finally {
-      setOauthLoading(false);
-    }
+    window.location.href = '/auth/google';
   };
 
   return (
