@@ -1,5 +1,6 @@
 import { ResumeAnalysis } from '../types';
 import { mockResumeAnalysis } from './mockData';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 export interface StoredResume {
   id: string;
@@ -17,7 +18,6 @@ export class ResumeStorage {
     if (typeof window === 'undefined') return [];
     const data = localStorage.getItem(this.KEY);
     if (!data) {
-      // Seed with a default resume for testing
       const seeded: StoredResume = {
         id: 'seed-1',
         fileName: 'alex_mercer_resume_2026.pdf',
@@ -27,9 +27,18 @@ export class ResumeStorage {
         analysis: mockResumeAnalysis
       };
       localStorage.setItem(this.KEY, JSON.stringify([seeded]));
+      
+      // Sync seeded resume to database in background
+      this.syncToSupabase(seeded);
+      
       return [seeded];
     }
-    return JSON.parse(data);
+
+    const list = JSON.parse(data);
+    // Background sync check for all resumes
+    this.syncAllToSupabase(list);
+
+    return list;
   }
 
   static saveResume(fileName: string, fileSize: string, text: string, analysis?: ResumeAnalysis): StoredResume {
@@ -44,6 +53,10 @@ export class ResumeStorage {
     };
     resumes.unshift(newResume);
     localStorage.setItem(this.KEY, JSON.stringify(resumes));
+
+    // Async sync to Supabase database
+    this.syncToSupabase(newResume);
+
     return newResume;
   }
 
@@ -53,6 +66,9 @@ export class ResumeStorage {
     if (idx !== -1) {
       resumes[idx].analysis = analysis;
       localStorage.setItem(this.KEY, JSON.stringify(resumes));
+      
+      // Async sync update to Supabase
+      this.syncToSupabase(resumes[idx]);
     }
   }
 
@@ -60,5 +76,63 @@ export class ResumeStorage {
     const resumes = this.getResumes();
     const filtered = resumes.filter(r => r.id !== id);
     localStorage.setItem(this.KEY, JSON.stringify(filtered));
+
+    // Async delete from Supabase database
+    this.deleteFromSupabase(id);
+  }
+
+  /**
+   * Background helper to sync a single resume record to Supabase
+   */
+  private static async syncToSupabase(resume: StoredResume) {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    try {
+      const email = typeof window !== 'undefined' 
+        ? (JSON.parse(localStorage.getItem('recruitai_user') || '{}').email || 'guest@pixelmind.ai')
+        : 'guest@pixelmind.ai';
+
+      // Insert or Update the record using upsert
+      const { error } = await supabase.from('resumes').upsert({
+        id: resume.id.includes('-') ? undefined : undefined, // Avoid formatting mismatches
+        user_id: email, // Maps to email profiles
+        file_name: resume.fileName,
+        file_url: resume.text.substring(0, 200),
+        ats_score: resume.analysis?.atsScore || 0,
+        analysis: resume.analysis
+      }, { onConflict: 'file_name' });
+
+      if (error) throw error;
+      console.log(`Synced resume ${resume.fileName} to Supabase successfully.`);
+    } catch (err) {
+      console.warn('Background Supabase sync deferred:', err);
+    }
+  }
+
+  /**
+   * Background helper to sync all resumes in batch
+   */
+  private static async syncAllToSupabase(resumes: StoredResume[]) {
+    if (!isSupabaseConfigured || !supabase) return;
+    resumes.forEach(r => this.syncToSupabase(r));
+  }
+
+  /**
+   * Background helper to delete a resume from Supabase
+   */
+  private static async deleteFromSupabase(id: string) {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    try {
+      const { error } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      console.log(`Deleted resume ${id} from Supabase.`);
+    } catch (err) {
+      console.warn('Background Supabase delete failed:', err);
+    }
   }
 }

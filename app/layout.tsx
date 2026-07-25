@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,17 +26,38 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  const content = (
+    <AuthProvider>
+      <ToastProvider>
+        {children}
+      </ToastProvider>
+    </AuthProvider>
+  );
+
+  if (hasClerk) {
+    return (
+      <ClerkProvider>
+        <html
+          lang="en"
+          className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+        >
+          <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-200">
+            {content}
+          </body>
+        </html>
+      </ClerkProvider>
+    );
+  }
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground transition-colors duration-200">
-        <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </AuthProvider>
+        {content}
       </body>
     </html>
   );
