@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { SignIn, SignUp } from '@clerk/nextjs';
 import { Mail, ShieldCheck, Globe, ArrowRight, Loader2, Sparkles, X } from 'lucide-react';
 
 interface AuthModalProps {
@@ -23,7 +24,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
 
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
   if (!isOpen) return null;
+
+  if (hasClerk) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-[fadeIn_0.15s_ease-out]">
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+        <div className="absolute inset-0" onClick={onClose} />
+        <div className="relative z-10 animate-[scaleIn_0.2s_ease-out]">
+          <button
+            onClick={onClose}
+            className="absolute -top-12 right-0 text-white/70 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {mode === 'login' ? (
+            <SignIn routing="hash" forceRedirectUrl="/dashboard" />
+          ) : (
+            <SignUp routing="hash" forceRedirectUrl="/dashboard" />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { mockProfile } from '../services/mockData';
+import { useUser, useClerk } from '@clerk/nextjs';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -18,13 +19,97 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const hasClerkKey = () => !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+/**
+ * 1. REAL CLERK AUTH PROVIDER
+ * Active when NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is configured
+ */
+const ClerkAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
+  
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user) {
+      // Map the real Google / Email Clerk account profile details
+      setProfile({
+        name: user.fullName || user.username || "Candidate Profile",
+        email: user.primaryEmailAddress?.emailAddress || "",
+        avatarUrl: user.imageUrl,
+        title: (user.publicMetadata?.role as string) === 'recruiter' 
+          ? "Verified Recruiter" 
+          : "Senior Software Engineer",
+        bio: "Authenticated securely via live Clerk SSO.",
+        skills: ["React", "TypeScript", "Next.js", "Tailwind CSS"],
+        experience: [
+          {
+            company: "Clerk Session",
+            role: "Verified Account User",
+            duration: "Present",
+            description: "Session data loaded directly from active Google Account authentication scopes."
+          }
+        ],
+        education: [],
+        certifications: [],
+        projects: []
+      });
+    } else {
+      setProfile(null);
+    }
+  }, [isLoaded, isSignedIn, user]);
+
+  const loginWithEmail = async () => {
+    // Handled natively by Clerk UI
+  };
+
+  const loginWithGoogle = async () => {
+    // Handled natively by Clerk UI
+  };
+
+  const logout = async () => {
+    await signOut();
+  };
+
+  const updateProfile = (updates: Partial<UserProfile>) => {
+    if (profile) {
+      setProfile({ ...profile, ...updates });
+    }
+  };
+
+  const toggleDemoMode = () => {
+    setIsDemoMode(!isDemoMode);
+  };
+
+  return (
+    <AuthContext.Provider value={{
+      user: profile,
+      isAuthenticated: isSignedIn || false,
+      isLoading: !isLoaded,
+      isDemoMode,
+      loginWithEmail,
+      loginWithGoogle,
+      logout,
+      updateProfile,
+      toggleDemoMode
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+/**
+ * 2. MOCK AUTH PROVIDER
+ * Fallback active in Demo Mode (without Clerk configured)
+ */
+const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
 
-  // Load initial state on client mount
   useEffect(() => {
     const storedUser = localStorage.getItem('recruitai_user');
     const storedAuth = localStorage.getItem('recruitai_authenticated');
@@ -37,10 +122,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (storedDemo !== null) {
       setIsDemoMode(storedDemo === 'true');
-    } else {
-      // Default to demo mode if no key is present in env
-      const hasApiKey = !!(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
-      setIsDemoMode(!hasApiKey);
     }
 
     setIsLoading(false);
@@ -48,9 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithEmail = async (email: string) => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800)); // Simulated network latency
+    await new Promise((resolve) => setTimeout(resolve, 800));
     
-    // Create new profile based on email or load mock
     const newUser: UserProfile = {
       ...mockProfile,
       email,
@@ -121,6 +201,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+/**
+ * 3. HYBRID DISPATCHER PROVIDER
+ */
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const hasClerk = hasClerkKey();
+
+  if (hasClerk) {
+    return <ClerkAuthProvider>{children}</ClerkAuthProvider>;
+  }
+
+  return <MockAuthProvider>{children}</MockAuthProvider>;
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -128,3 +221,4 @@ export const useAuth = () => {
   }
   return context;
 };
+export default AuthProvider;
