@@ -16,9 +16,15 @@ const clerk = hasClerkKeys
     })
   : null;
 
-export function proxy(req: any, event: any) {
+export async function proxy(req: any, event: any) {
   if (clerk) {
-    return clerk(req, event);
+    try {
+      const res = await clerk(req, event);
+      return res;
+    } catch (err: any) {
+      console.error("Clerk Middleware Error:", err);
+      return new Response(`Clerk Middleware Crash: ${err.message}\n${err.stack}`, { status: 500 });
+    }
   }
   // If Clerk is not configured, allow requests to proceed (Demo mode fallback)
   return NextResponse.next();
