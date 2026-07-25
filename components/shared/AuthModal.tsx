@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { Mail, ShieldCheck, Globe, ArrowRight, Loader2, Sparkles, X } from 'lucide-react';
@@ -12,6 +13,7 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMode = 'login' }) => {
+  const router = useRouter();
   const { loginWithEmail, loginWithGoogle } = useAuth();
   const { toast } = useToast();
   
@@ -39,6 +41,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
         "success"
       );
       onClose();
+      router.push('/dashboard');
     } catch (err: any) {
       toast("Authentication Failed", err.message || "Something went wrong", "error");
     } finally {
@@ -52,6 +55,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultMo
       await loginWithGoogle();
       toast("Welcome back!", "Successfully authenticated using Google", "success");
       onClose();
+      router.push('/dashboard');
     } catch (err: any) {
       toast("Google Login Failed", "Could not complete oauth flow.", "error");
     } finally {
