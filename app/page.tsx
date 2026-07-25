@@ -334,55 +334,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="max-w-7xl mx-auto px-6 py-20 relative z-10 border-t border-border/50">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">
-            Endorsed by Engineers & Recruiters
-          </h2>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              quote: "The ATS feedback matches precisely what my recruiters complain about. Adding quantitative metric suggestions is pure genius.",
-              author: "Elena Petrova",
-              role: "Principal Recruiter, TechCorp",
-              rating: 5
-            },
-            {
-              quote: "The coding prep questions simulated by Gemini on my React resume were spot on. Helped me secure my lead engineer offer.",
-              author: "Rohan Kamath",
-              role: "Lead Full-Stack Developer",
-              rating: 5
-            },
-            {
-              quote: "PixelMind's recruiter board let us analyze 25 applications in 1 minute. Clean formatting, instant rankings. Saves hours daily.",
-              author: "Sarah Jenkins",
-              role: "Talent Acquisition Lead",
-              rating: 5
-            }
-          ].map((item, idx) => (
-            <div key={idx} className="p-6 rounded-2xl glass-panel bg-card/45 border border-border/50">
-              <div className="flex gap-1 mb-4 text-amber-400">
-                {Array.from({ length: item.rating }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground italic mb-6">"{item.quote}"</p>
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-indigo-500/20 flex items-center justify-center font-bold text-sm text-indigo-400 border border-indigo-500/20">
-                  {item.author[0]}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">{item.author}</h4>
-                  <p className="text-xs text-muted-foreground">{item.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* Pricing Section */}
       <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 relative z-10 border-t border-border/50 scroll-mt-24">
