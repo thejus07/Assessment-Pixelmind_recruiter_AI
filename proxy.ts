@@ -5,8 +5,8 @@ const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
 ]);
 
-// Safely initialize clerk middleware or bypass if keys are missing
-const hasClerkKeys = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
+// Safely initialize clerk middleware or bypass if keys are missing/disabled
+const hasClerkKeys = process.env.NEXT_PUBLIC_ENABLE_CLERK === 'true' && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
 
 const clerk = hasClerkKeys 
   ? clerkMiddleware(async (auth, req) => {

@@ -19,7 +19,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const hasClerkKey = () => !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const hasClerkKey = () => process.env.NEXT_PUBLIC_ENABLE_CLERK === 'true' && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 /**
  * 1. REAL CLERK AUTH PROVIDER

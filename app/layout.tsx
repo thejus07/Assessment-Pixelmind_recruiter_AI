@@ -26,7 +26,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const hasClerk = process.env.NEXT_PUBLIC_ENABLE_CLERK === 'true' && !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
   const content = (
     <AuthProvider>
