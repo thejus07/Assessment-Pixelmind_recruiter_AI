@@ -1,94 +1,118 @@
-# PixelMind Recruit AI
+# PixelMind Recruit AI — Production-Ready SaaS Platform
 
-PixelMind Recruit AI is a premium, production-ready SaaS platform built for software developers to optimize their profiles and for recruiters to source and rank candidates using AI.
+PixelMind Recruit AI is an AI-powered recruitment and resume optimization platform designed to solve real business inefficiencies in hiring. Candidates use it to maximize their resume ATS compatibility, draft custom cover letters, and practice mock interviews. Recruiters use it to bulk-rank and filter candidates based on skills and resume criteria using Google Gemini.
 
 Designed with a sleek, developer-focused aesthetic inspired by Vercel and Stripe, the app features glassmorphism, responsive visual charts, fluid animations, and robust TypeScript routing.
 
----
-
-## 🌟 Core Features
-
-1. **AI Resume Analyzer**: Upload PDF or TXT resumes. Extract text and invoke Google Gemini AI to calculate an ATS compatibility score, audit strengths and weaknesses, isolate missing skills, and suggest concrete formatting fixes.
-2. **AI Job Matcher**: Paste a job description to calculate job alignment odds, detect missing technical keywords, and isolate critical skill gaps.
-3. **AI Cover Letter Generator**: Generate highly customized cover letters tailored to your profile. Tone modifiers allow selecting between *Professional*, *Bold*, or *Creative* modes.
-4. **Interactive Interview Prep**: Practice job-specific mock interview sessions across Technical, HR, Behavioral, and Coding categories. Includes model responses and a custom AI answer grader.
-5. **AI Career Coach**: Chat with an AI mentor. Select prompt pills for AWS prep roadmaps, standout project recommendations, and CV updates.
-6. **Recruiter Bulk Sorter**: Drop multiple applicant resumes in parallel to rank and filter candidates on a custom, sortable grid layout with detailed profile slides.
-7. **Analytics Dashboard**: Monitor total uploaded resumes, average ATS trends, matching statistics, and readiness indicators using custom SVG widgets.
-8. **Settings & Profile**: Save your own custom Google Gemini API Key, toggle Light/Dark themes, adjust mock billing plans, and edit biography credentials.
+*   **Live Application URL**: [https://assessment-pixelmind-recruiter-ai.vercel.app](https://assessment-pixelmind-recruiter-ai.vercel.app)
+*   **GitHub Repository**: [https://github.com/thejus07/Assessment-Pixelmind_recruiter_AI](https://github.com/thejus07/Assessment-Pixelmind_recruiter_AI)
 
 ---
 
-## ⚡ Setup & Installation
+## 💼 1. Business Value Proposition
 
-### 1. Zero-Config Run (Demo Mode)
-This application includes a **Demo Mode fallback**. If you do not have Clerk, Supabase, or Google Gemini credentials, you can run the app immediately out-of-the-box:
-* Simulated authentication will mock Google and Email sign-ins.
-* Simulated AI engines will scan text inputs for key terms and return realistic ratings, skill lists, cover letters, and interview questions.
-* Stored resumes and chats will persist in browser `localStorage`.
+The platform solves two core business problems in the hiring lifecycle:
+1.  **For Candidates**: The "ATS Black Hole." Over 70% of resumes are filtered out by automated Applicant Tracking Systems before reaching human eyes. PixelMind uses Gemini AI to scan resumes, score formatting, highlight critical missing keywords, and suggest concrete formatting fixes, helping candidates secure interviews.
+2.  **For Recruiters**: Sourcing Bottlenecks. Sifting through hundreds of applications manually takes hours. PixelMind's Recruiter Panel allows drop-uploading dozens of resumes in parallel, parsing them with AI, and rendering a sortable match grid that ranks candidates based on their technical fit, experience, and certifications.
 
-### 2. Live API Mode
-To activate real Google Gemini API queries:
-1. Navigate to the **Settings** panel inside the dashboard.
-2. Paste your **Google Gemini API Key** and save.
-3. The indicator badge in the top bar will instantly transition from **DEMO MODE** to **LIVE API**.
+---
 
-Alternatively, create an `.env.local` file at the root:
-```env
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+## 🛠️ 2. Technology Stack
+
+*   **Framework**: Next.js 16 (App Router) & React 19
+*   **Language**: TypeScript (100% strict type safety)
+*   **Styling**: TailwindCSS & Framer Motion (for animations and micro-interactions)
+*   **AI Engine**: Google Gemini API (`gemini-2.5-flash`)
+*   **Authentication**: Clerk Authentication (with Google OAuth and Email sign-ins)
+*   **Database**: Supabase (PostgreSQL database with Row-Level Security)
+*   **CI/CD & Hosting**: GitHub Actions & Vercel CLI
+
+---
+
+## 🔐 3. Database Schema & Security (RBAC)
+
+The project supports a hybrid database model. If no database env keys are present, it falls back to an **Offline-First local storage architecture**. When Supabase keys are configured, it connects to these PostgreSQL tables:
+
+### Profiles Table (`profiles`)
+Tracks user roles and profiles synchronized from Clerk webhooks:
+*   `id`: `text` (Primary Key - maps to Clerk User ID)
+*   `name`: `text` (User's display name)
+*   `email`: `text` (Unique email)
+*   `role`: `text` (Defaults to `candidate`, supports `recruiter` and `admin`)
+*   `avatar_url`: `text`
+
+### Resumes Table (`resumes`)
+*   `id`: `uuid` (Primary Key)
+*   `user_id`: `text` (Foreign Key referencing `profiles.id`)
+*   `file_name`: `text`
+*   `file_url`: `text`
+*   `ats_score`: `integer`
+*   `analysis`: `jsonb` (Holds Gemini's structural audit, strengths, weaknesses, and skill gaps)
+
+### Row-Level Security (RLS) Policies
+Data is guarded directly in PostgreSQL:
+*   **Candidates**: Can read and insert *only* their own resumes (`auth.uid() = user_id`).
+*   **Recruiters**: Can select and read *all* candidate profiles and resume data to perform sorting and sourcing filters, but cannot edit them.
+
+---
+
+## 🔄 4. CI/CD Pipeline Architecture
+
+The application implements a full-stage DevOps workflow inside [.github/workflows/deploy.yml](https://github.com/thejus07/Assessment-Pixelmind_recruiter_AI/blob/main/.github/workflows/deploy.yml) that triggers on every push to the `main` branch.
+
+```mermaid
+graph TD
+    A[Push to main] --> B[GitHub Actions Runner]
+    B --> C[Step 1: Install Dependencies]
+    B --> D[Step 2: Lint Audit - npm run lint]
+    B --> E[Step 3: Run Smoke Tests - npm test]
+    B --> F[Step 4: Build Bundle - npm run build]
+    F --> G[Step 5: Deploy to Vercel via Vercel CLI]
+    G --> H[Live App Updated]
 ```
 
-### 3. Running Locally
+### GitHub Secrets Required:
+*   `VERCEL_TOKEN`: Vercel Personal Access Token.
+*   `VERCEL_ORG_ID`: Vercel Org/Team identifier.
+*   `VERCEL_PROJECT_ID`: Vercel Project identifier.
+
+---
+
+## ⚡ 5. Setup & Local Installation
+
+### Prerequisites
+*   Node.js 18+ and npm
+
+### 1. Offline Demo Mode (Out-of-the-Box)
+The application has a built-in **Demo Mode fallback**. If no API keys are loaded, it will simulate Google Login, Chatbots, and Resume parsing locally in the browser cache without crashing.
+
+### 2. Live API Mode
+Create a `.env.local` file at the root:
+```env
+# Google Gemini API
+NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+
+# Clerk Auth Keys (without trailing $)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y3VycmVudC1zdGFnLTgwLmNsZXJrLmFjY291bnRzLmRldiQ
+CLERK_SECRET_KEY=sk_test_ODkgh9RNEn2nMtOfPMZXDD67ZCfaY4PqLbsNcXYs5e
+
+# Supabase Keys (Optional)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+```
+
+### 3. Run Commands
 ```bash
 # Install dependencies
 npm install
 
-# Run verification tests
+# Run linter checks
+npm run lint
+
+# Run integration smoke tests
 npm test
 
-# Launch dev server
+# Run local dev server
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) to view the application.
-
----
-
-## 📁 Folder Structure
-
-```
-c:\Users\theju\Desktop\Assessment\
-├── app/                  # App router entries, layout, and global configurations
-├── components/           # UI elements & custom modules
-│   ├── dashboard/        # Feature panel components (Analyzer, Matcher, Recruiter, etc.)
-│   └── shared/           # Navbars, footers, and Clerk Mock Auth Modal
-├── context/              # React Context Providers (AuthContext, ToastContext)
-├── hooks/                # Custom React hook utilities
-├── lib/                  # Initializations and API connectors
-├── public/               # SVG grids, mock icons, and static assets
-├── scripts/              # Integration smoke tests
-├── services/             # API services and mock data definitions
-│   ├── geminiService.ts  # Handles Gemini API & rule-based mock fallbacks
-│   ├── mockData.ts       # Mock datasets for offline operations
-│   └── resumeStorage.ts  # LocalStorage resume cache utilities
-├── types/                # TypeScript Interfaces
-└── .github/workflows/    # CI/CD deployment pipelines (Vercel automatic hooks)
-```
-
----
-
-## 🚀 CI/CD & Deployments
-
-This project is configured with a automated GitHub Actions workflow inside [deploy.yml](file:///.github/workflows/deploy.yml).
-
-### Pipeline Steps:
-1. **Lint Audit**: Verifies code styling standards using `npm run lint`.
-2. **Execute Tests**: Runs structural integrity smoke tests using `npm test`.
-3. **Build Target**: Compiles the Next.js production output bundle (`npm run build`).
-4. **Deploy**: Automatically deploys compiled assets to Vercel production on every push to the `main` or `master` branches.
-
-### Production Env Keys (Vercel):
-Configure the following secrets in your GitHub Repository settings (`Settings > Secrets and variables > Actions`):
-* `VERCEL_TOKEN`: Vercel Personal Access Token.
-* `VERCEL_ORG_ID`: Vercel account Org ID.
-* `VERCEL_PROJECT_ID`: Vercel project ID.
-* `NEXT_PUBLIC_GEMINI_API_KEY`: Production Gemini API key (optional).
+Open [http://localhost:3000](http://localhost:3000) to view the workspace.
