@@ -509,7 +509,7 @@ export default function LandingPage() {
             <a href="https://github.com" className="hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer">
               <Globe className="h-4 w-4" />
             </a>
-            <a href="mailto:contact@pixelmind.ai" className="hover:text-foreground transition-colors">
+            <a href="mailto:thejuskadavath@gmail.com" className="hover:text-foreground transition-colors">
               <Mail className="h-4 w-4" />
             </a>
           </div>
